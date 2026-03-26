@@ -3,57 +3,88 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <title>Verification Portal</title>
 
-<!-- MediaPipe -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils"></script>
 
 <style>
-body {
+
+body{
     margin:0;
-    font-family:-apple-system,BlinkMacSystemFont,sans-serif;
-    background: linear-gradient(180deg,#081a3a,#0f2b6d);
-    color:white;
-    text-align:center;
+    font-family:'Inter',sans-serif;
+    background:linear-gradient(180deg,#0a1f44,#0f2f6f);
+    color:#fff;
 }
 
-.header {
-    padding:15px;
-    font-weight:600;
-    font-size:14px;
-    background:#0a1f4d;
+/* HEADER */
+.header{
+    text-align:center;
+    font-weight:800;
+    font-size:18px;
+    padding:18px;
     letter-spacing:1px;
 }
 
-.container {
+/* HOME */
+.container{
     padding:25px;
+    max-width:500px;
+    margin:auto;
 }
 
-.card {
+.title{
+    font-size:28px;
+    font-weight:800;
+}
+
+.subtitle{
+    opacity:0.8;
+    margin-top:8px;
+    line-height:1.5;
+}
+
+.card{
+    margin-top:25px;
     background:rgba(255,255,255,0.08);
-    padding:15px;
-    border-radius:12px;
-    margin:20px;
+    padding:18px;
+    border-radius:14px;
+    text-align:left;
 }
 
-button {
-    width:90%;
-    padding:15px;
-    border:none;
-    border-radius:30px;
-    font-size:18px;
-    background:linear-gradient(90deg,#00d2ff,#3affb3);
-    color:white;
+.card p{
+    margin:10px 0;
+    font-size:15px;
 }
 
-video {
+button{
     width:100%;
-    max-width:400px;
+    padding:16px;
+    margin-top:25px;
+    border:none;
+    border-radius:40px;
+    font-size:17px;
+    font-weight:600;
+    background:linear-gradient(90deg,#00c6ff,#00ffa3);
+    color:#fff;
+}
+
+/* CAMERA */
+.camera-wrap{
+    position:relative;
+    margin-top:30px;
+}
+
+video{
+    width:100%;
     border-radius:20px;
 }
 
-.oval {
+/* SCANNER */
+.oval{
     position:absolute;
     top:50%;
     left:50%;
@@ -61,93 +92,87 @@ video {
     width:260px;
     height:340px;
     border-radius:50%;
-    border:4px solid #3affb3;
-    box-shadow:0 0 20px #3affb3;
-    animation:glow 2s infinite alternate;
+    border:4px solid #00ffa3;
+    box-shadow:0 0 25px #00ffa3;
 }
 
-@keyframes glow {
-    from {box-shadow:0 0 10px #3affb3;}
-    to {box-shadow:0 0 30px #3affb3;}
+/* RESULT */
+.result{
+    text-align:center;
+    margin-top:100px;
+    font-size:26px;
+    font-weight:800;
 }
 
-.progress-ring {
-    width:100px;
-    height:100px;
-    border-radius:50%;
-    border:6px solid #3affb3;
-    margin:auto;
-    margin-top:20px;
+.success{
+    background:linear-gradient(180deg,#0f9d58,#00e676);
 }
 
-.hidden {display:none;}
-
-@media (max-width:600px){
-    h1 {font-size:22px;}
+.fail{
+    background:linear-gradient(180deg,#b00020,#ff1744);
 }
+
+.hidden{display:none;}
+
 </style>
 </head>
 
 <body>
 
 <div class="header">
-Cybersecurity Wares Store Verification Portal
+CYBERSECURITY WARES STORE VERIFICATION PORTAL
 </div>
 
 <!-- HOME -->
 <div id="home" class="container">
-    <h1>Face Verification</h1>
-    <p>Please follow the instructions to complete verification.</p>
+    <div class="title">Face Verification</div>
 
-    <div class="card">
-        <p>✔ Stay in bright environment</p>
-        <p>✔ Face inside frame</p>
-        <p>✔ Remove glasses/masks</p>
+    <div class="subtitle">
+        Please follow the instructions to complete face verification to secure your account.
     </div>
 
-    <button onclick="startVerification()">Start Verification</button>
+    <div class="card">
+        <p>✔ Stay in a brightly lit environment</p>
+        <p>✔ Your face is inside the frame</p>
+        <p>✔ Remove glasses, hats, masks</p>
+    </div>
+
+    <button onclick="start()">Start Verification</button>
 </div>
 
 <!-- CAMERA -->
 <div id="cameraPage" class="container hidden">
-    <h2 id="instruction">Align your face</h2>
+    <div class="title" id="instruction">Align your face</div>
 
-    <div style="position:relative;">
+    <div class="camera-wrap">
         <video id="video" autoplay playsinline></video>
         <div class="oval"></div>
     </div>
 
-    <div class="progress-ring" id="progress"></div>
-
-    <button onclick="manualVerify()">Verify</button>
+    <button onclick="startCheck()">Verify</button>
 </div>
 
 <!-- RESULT -->
 <div id="resultPage" class="container hidden">
-    <h1 id="resultText"></h1>
+    <div id="resultText" class="result"></div>
     <button onclick="location.reload()">Start Again</button>
 </div>
 
 <script>
-let blinkDetected = false;
-let verifying = false;
 
-// START
-function startVerification(){
-    document.getElementById("home").classList.add("hidden");
-    document.getElementById("cameraPage").classList.remove("hidden");
+let blink = false;
+let aligned = false;
+
+/* START */
+function start(){
+    home.classList.add("hidden");
+    cameraPage.classList.remove("hidden");
     initCamera();
-    speak("Please blink your eyes to begin verification");
 }
 
-// VOICE
-function speak(text){
-    let msg = new SpeechSynthesisUtterance(text);
-    speechSynthesis.speak(msg);
-}
-
-// CAMERA
+/* CAMERA + AI */
 async function initCamera(){
+
     const video = document.getElementById("video");
 
     const stream = await navigator.mediaDevices.getUserMedia({video:true});
@@ -162,27 +187,30 @@ async function initCamera(){
         refineLandmarks:true
     });
 
-    let lastBlinkTime = 0;
-
     faceMesh.onResults(results=>{
-        if(results.multiFaceLandmarks.length > 0){
+        if(results.multiFaceLandmarks.length>0){
+
+            aligned = true;
+
             const lm = results.multiFaceLandmarks[0];
 
-            const eyeTop = lm[159];
-            const eyeBottom = lm[145];
-            const dist = Math.abs(eyeTop.y - eyeBottom.y);
+            const top = lm[159];
+            const bottom = lm[145];
 
-            if(dist < 0.01 && Date.now()-lastBlinkTime>1500){
-                lastBlinkTime = Date.now();
-                blinkDetected = true;
-                speak("Blink detected. Starting verification");
-                startCountdown();
+            let eyeDist = Math.abs(top.y - bottom.y);
+
+            if(eyeDist < 0.015){
+                blink = true;
+                instruction.innerText = "Blink detected";
             }
+        }else{
+            aligned = false;
+            instruction.innerText = "Align your face";
         }
     });
 
     const camera = new Camera(video,{
-        onFrame: async ()=>{
+        onFrame: async()=>{
             await faceMesh.send({image:video});
         },
         width:480,
@@ -192,54 +220,27 @@ async function initCamera(){
     camera.start();
 }
 
-// COUNTDOWN
-function startCountdown(){
-    if(verifying) return;
-    verifying = true;
+/* VERIFY */
+function startCheck(){
 
-    let seconds = 10;
-    const instruction = document.getElementById("instruction");
+    instruction.innerText = "Checking...";
 
-    const interval = setInterval(()=>{
-        instruction.innerText = "Verifying... " + seconds;
-        seconds--;
+    setTimeout(()=>{
 
-        if(seconds===7){
-            speak("Turn your head left");
-        }
-        if(seconds===4){
-            speak("Turn your head right");
-        }
+        cameraPage.classList.add("hidden");
+        resultPage.classList.remove("hidden");
 
-        if(seconds <= 0){
-            clearInterval(interval);
-            finishVerification();
+        if(blink && aligned){
+            document.body.className="success";
+            resultText.innerText="Verification Successful";
+        }else{
+            document.body.className="fail";
+            resultText.innerText="Verification Failed";
         }
 
-    },1000);
+    },3000);
 }
 
-// MANUAL BUTTON
-function manualVerify(){
-    startCountdown();
-}
-
-// RESULT
-function finishVerification(){
-    document.getElementById("cameraPage").classList.add("hidden");
-    document.getElementById("resultPage").classList.remove("hidden");
-
-    // simple logic (no storage)
-    let success = blinkDetected;
-
-    if(success){
-        document.getElementById("resultText").innerText = "Verification Successful";
-        document.body.style.background = "linear-gradient(180deg,#0a7f4f,#00c896)";
-    } else {
-        document.getElementById("resultText").innerText = "Verification Failed";
-        document.body.style.background = "linear-gradient(180deg,#7f0a0a,#c80000)";
-    }
-}
 </script>
 
 </body>
