@@ -3,187 +3,242 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Federal Anti-Scam Agency - Verification</title>
+<title>Verification Portal</title>
 
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-
-<script src="https://cdn.jsdelivr.net/npm/face-api.js"></script>
+<!-- MediaPipe -->
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils"></script>
 
 <style>
-* { margin:0; padding:0; box-sizing:border-box; font-family: 'Inter', sans-serif; }
-
 body {
-  background: #0b1f3a;
-  color: #fff;
+    margin:0;
+    font-family:-apple-system,BlinkMacSystemFont,sans-serif;
+    background: linear-gradient(180deg,#081a3a,#0f2b6d);
+    color:white;
+    text-align:center;
 }
 
-/* HEADER */
 .header {
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  padding:15px 20px;
-  background:#0a1a33;
+    padding:15px;
+    font-weight:600;
+    font-size:14px;
+    background:#0a1f4d;
+    letter-spacing:1px;
 }
 
-.header img {
-  width:45px;
+.container {
+    padding:25px;
 }
-
-.header h1 {
-  font-size:16px;
-  color:#00c2ff;
-}
-
-/* SCREEN */
-.screen {
-  display:none;
-  padding:20px;
-  text-align:center;
-}
-
-.active {
-  display:block;
-}
-
-/* BUTTON */
-.btn {
-  margin-top:30px;
-  padding:15px;
-  width:100%;
-  border:none;
-  border-radius:30px;
-  background:linear-gradient(90deg,#00ffcc,#00bfa6);
-  color:#fff;
-  font-size:18px;
-  font-weight:600;
-}
-
-/* CAMERA */
-video {
-  width:100%;
-  max-width:300px;
-  border-radius:50%;
-  border:5px solid #00ffcc;
-  margin-top:20px;
-}
-
-/* RESULT */
-.success { background:#0ea34a; }
-.fail { background:#c62828; }
 
 .card {
-  background:#0d274d;
-  padding:20px;
-  border-radius:12px;
-  margin-top:20px;
+    background:rgba(255,255,255,0.08);
+    padding:15px;
+    border-radius:12px;
+    margin:20px;
 }
 
-.notice {
-  background:#f5e6c5;
-  color:#000;
-  padding:15px;
-  border-radius:10px;
-  margin-top:20px;
+button {
+    width:90%;
+    padding:15px;
+    border:none;
+    border-radius:30px;
+    font-size:18px;
+    background:linear-gradient(90deg,#00d2ff,#3affb3);
+    color:white;
 }
 
+video {
+    width:100%;
+    max-width:400px;
+    border-radius:20px;
+}
+
+.oval {
+    position:absolute;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%);
+    width:260px;
+    height:340px;
+    border-radius:50%;
+    border:4px solid #3affb3;
+    box-shadow:0 0 20px #3affb3;
+    animation:glow 2s infinite alternate;
+}
+
+@keyframes glow {
+    from {box-shadow:0 0 10px #3affb3;}
+    to {box-shadow:0 0 30px #3affb3;}
+}
+
+.progress-ring {
+    width:100px;
+    height:100px;
+    border-radius:50%;
+    border:6px solid #3affb3;
+    margin:auto;
+    margin-top:20px;
+}
+
+.hidden {display:none;}
+
+@media (max-width:600px){
+    h1 {font-size:22px;}
+}
 </style>
 </head>
 
 <body>
 
 <div class="header">
-  <h1>FEDERAL ANTI-SCAM AGENCY</h1>
+Cybersecurity Wares Store Verification Portal
 </div>
 
 <!-- HOME -->
-<div id="home" class="screen active">
-  <h2>Face Verification</h2>
-  <p>Please follow the instructions to complete verification.</p>
+<div id="home" class="container">
+    <h1>Face Verification</h1>
+    <p>Please follow the instructions to complete verification.</p>
 
-  <div class="card">
-    <p>✔ Stay in bright environment</p>
-    <p>✔ Face inside frame</p>
-    <p>✔ Remove glasses/masks</p>
-  </div>
+    <div class="card">
+        <p>✔ Stay in bright environment</p>
+        <p>✔ Face inside frame</p>
+        <p>✔ Remove glasses/masks</p>
+    </div>
 
-  <button class="btn" onclick="start()">Start Verification</button>
+    <button onclick="startVerification()">Start Verification</button>
 </div>
 
 <!-- CAMERA -->
-<div id="camera" class="screen">
-  <h2 id="instruction">Align your face</h2>
-  <video id="video" autoplay muted></video>
-  <button class="btn" onclick="beginScan()">Verify</button>
-</div>
+<div id="cameraPage" class="container hidden">
+    <h2 id="instruction">Align your face</h2>
 
-<!-- LOADING -->
-<div id="loading" class="screen">
-  <h2>Verifying Your Face...</h2>
+    <div style="position:relative;">
+        <video id="video" autoplay playsinline></video>
+        <div class="oval"></div>
+    </div>
+
+    <div class="progress-ring" id="progress"></div>
+
+    <button onclick="manualVerify()">Verify</button>
 </div>
 
 <!-- RESULT -->
-<div id="result" class="screen">
-  <h2 id="statusText"></h2>
-</div>
-
-<!-- FINAL -->
-<div id="final" class="screen">
-  <div class="notice">
-    <b>Important Notice:</b><br>
-    Please return to main verification page to continue.
-  </div>
+<div id="resultPage" class="container hidden">
+    <h1 id="resultText"></h1>
+    <button onclick="location.reload()">Start Again</button>
 </div>
 
 <script>
-let video = document.getElementById("video");
+let blinkDetected = false;
+let verifying = false;
 
-async function start(){
-  switchScreen("camera");
-  const stream = await navigator.mediaDevices.getUserMedia({ video:true });
-  video.srcObject = stream;
+// START
+function startVerification(){
+    document.getElementById("home").classList.add("hidden");
+    document.getElementById("cameraPage").classList.remove("hidden");
+    initCamera();
+    speak("Please blink your eyes to begin verification");
 }
 
-function beginScan(){
-  let steps = ["Blink your eyes", "Turn head left", "Turn head right"];
-  let i = 0;
-
-  let interval = setInterval(()=>{
-    document.getElementById("instruction").innerText = steps[i];
-    i++;
-    if(i >= steps.length){
-      clearInterval(interval);
-      verify();
-    }
-  },3000);
+// VOICE
+function speak(text){
+    let msg = new SpeechSynthesisUtterance(text);
+    speechSynthesis.speak(msg);
 }
 
-function verify(){
-  switchScreen("loading");
+// CAMERA
+async function initCamera(){
+    const video = document.getElementById("video");
 
-  setTimeout(()=>{
-    let success = Math.random() > 0.3;
+    const stream = await navigator.mediaDevices.getUserMedia({video:true});
+    video.srcObject = stream;
 
-    switchScreen("result");
+    const faceMesh = new FaceMesh({
+        locateFile:(file)=>`https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`
+    });
+
+    faceMesh.setOptions({
+        maxNumFaces:1,
+        refineLandmarks:true
+    });
+
+    let lastBlinkTime = 0;
+
+    faceMesh.onResults(results=>{
+        if(results.multiFaceLandmarks.length > 0){
+            const lm = results.multiFaceLandmarks[0];
+
+            const eyeTop = lm[159];
+            const eyeBottom = lm[145];
+            const dist = Math.abs(eyeTop.y - eyeBottom.y);
+
+            if(dist < 0.01 && Date.now()-lastBlinkTime>1500){
+                lastBlinkTime = Date.now();
+                blinkDetected = true;
+                speak("Blink detected. Starting verification");
+                startCountdown();
+            }
+        }
+    });
+
+    const camera = new Camera(video,{
+        onFrame: async ()=>{
+            await faceMesh.send({image:video});
+        },
+        width:480,
+        height:640
+    });
+
+    camera.start();
+}
+
+// COUNTDOWN
+function startCountdown(){
+    if(verifying) return;
+    verifying = true;
+
+    let seconds = 10;
+    const instruction = document.getElementById("instruction");
+
+    const interval = setInterval(()=>{
+        instruction.innerText = "Verifying... " + seconds;
+        seconds--;
+
+        if(seconds===7){
+            speak("Turn your head left");
+        }
+        if(seconds===4){
+            speak("Turn your head right");
+        }
+
+        if(seconds <= 0){
+            clearInterval(interval);
+            finishVerification();
+        }
+
+    },1000);
+}
+
+// MANUAL BUTTON
+function manualVerify(){
+    startCountdown();
+}
+
+// RESULT
+function finishVerification(){
+    document.getElementById("cameraPage").classList.add("hidden");
+    document.getElementById("resultPage").classList.remove("hidden");
+
+    // simple logic (no storage)
+    let success = blinkDetected;
 
     if(success){
-      document.body.className = "success";
-      document.getElementById("statusText").innerText = "Successfully Verified";
+        document.getElementById("resultText").innerText = "Verification Successful";
+        document.body.style.background = "linear-gradient(180deg,#0a7f4f,#00c896)";
     } else {
-      document.body.className = "fail";
-      document.getElementById("statusText").innerText = "Verification Failed";
+        document.getElementById("resultText").innerText = "Verification Failed";
+        document.body.style.background = "linear-gradient(180deg,#7f0a0a,#c80000)";
     }
-
-    setTimeout(()=>{
-      switchScreen("final");
-    },5000);
-
-  },3000);
-}
-
-function switchScreen(id){
-  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
-  document.getElementById(id).classList.add("active");
 }
 </script>
 
