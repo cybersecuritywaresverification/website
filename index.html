@@ -1,0 +1,186 @@
+<script>
+let video = document.getElementById("video");
+let faceMesh;
+
+let blinkDone = false;
+let leftDone = false;
+let rightDone = false;
+
+let movementScore = 0;
+let lastNoseX = null;
+
+let countdownStarted = false;
+
+function speak(text){
+let msg = new SpeechSynthesisUtterance(text);
+speechSynthesis.cancel();
+speechSynthesis.speak(msg);
+}
+
+async function start(){
+document.getElementById("page1").classList.add("hidden");
+document.getElementById("page2").classList.remove("hidden");
+
+const stream = await navigator.mediaDevices.getUserMedia({video:true});
+video.srcObject = stream;
+
+initAI();
+}
+
+function initAI(){
+faceMesh = new FaceMesh({
+locateFile:(file)=>`https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`
+});
+
+faceMesh.setOptions({
+maxNumFaces:1,
+refineLandmarks:true,
+minDetectionConfidence:0.7,
+minTrackingConfidence:0.7
+});
+
+faceMesh.onResults(results=>{
+if(results.multiFaceLandmarks.length>0){
+analyze(results.multiFaceLandmarks[0]);
+}else{
+updateInstruction("Align your face");
+}
+});
+
+async function loop(){
+await faceMesh.send({image:video});
+requestAnimationFrame(loop);
+}
+loop();
+}
+
+function updateInstruction(text){
+document.getElementById("instruction").innerText = text;
+speak(text);
+}
+
+/* ---------- BLINK ---------- */
+function detectBlink(l){
+let top = l[159];
+let bottom = l[145];
+return Math.abs(top.y - bottom.y) < 0.01;
+}
+
+/* ---------- HEAD TURN ---------- */
+function detectTurn(l){
+let nose = l[1];
+let left = l[234];
+let right = l[454];
+
+let center = (left.x + right.x)/2;
+
+if(nose.x < center - 0.03) return "LEFT";
+if(nose.x > center + 0.03) return "RIGHT";
+return "CENTER";
+}
+
+/* ---------- MOTION DETECTION ---------- */
+function detectMovement(l){
+let nose = l[1];
+
+if(lastNoseX !== null){
+let diff = Math.abs(nose.x - lastNoseX);
+
+if(diff > 0.002){
+movementScore++;
+}
+}
+
+lastNoseX = nose.x;
+}
+
+/* ---------- MAIN LOGIC ---------- */
+function analyze(l){
+
+detectMovement(l);
+
+// STEP 1: BLINK
+if(!blinkDone){
+updateInstruction("Blink your eyes");
+
+if(detectBlink(l)){
+blinkDone = true;
+}
+return;
+}
+
+// STEP 2: LEFT
+if(!leftDone){
+updateInstruction("Turn your head left");
+
+if(detectTurn(l) === "LEFT"){
+leftDone = true;
+}
+return;
+}
+
+// STEP 3: RIGHT
+if(!rightDone){
+updateInstruction("Turn your head right");
+
+if(detectTurn(l) === "RIGHT"){
+rightDone = true;
+}
+return;
+}
+
+// STEP 4: ANTI-SPOOF CHECK
+if(movementScore < 15){
+updateInstruction("Move naturally");
+
+return;
+}
+
+// STEP 5: HOLD
+updateInstruction("Hold still");
+startCountdown();
+}
+
+/* ---------- COUNTDOWN ---------- */
+function startCountdown(){
+if(countdownStarted) return;
+countdownStarted = true;
+
+let time = 10;
+let el = document.getElementById("countdown");
+
+let interval = setInterval(()=>{
+time--;
+el.innerText = time;
+
+if(time <= 0){
+clearInterval(interval);
+showLoading();
+}
+},1000);
+}
+
+/* ---------- LOADING ---------- */
+function showLoading(){
+document.getElementById("page2").classList.add("hidden");
+document.getElementById("modal").classList.remove("hidden");
+
+speak("Verifying your face");
+
+setTimeout(showResult,3000);
+}
+
+/* ---------- RESULT ---------- */
+function showResult(){
+document.getElementById("modal").classList.add("hidden");
+document.getElementById("result").classList.remove("hidden");
+
+if(movementScore >= 15){
+document.getElementById("result").innerHTML =
+"<div class='success'><h2>Successfully Verified</h2></div>";
+}else{
+document.getElementById("result").innerHTML =
+"<div class='fail'><h2>Verification Failed - Spoof Detected</h2><button class='btn' onclick='location.reload()'>Try Again</button></div>";
+}
+}
+</script>
